@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>因数分解演習マスター</title>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        :root {
+            --primary: #333;
+            --accent: #007aff;
+            --success: #34c759;
+            --error: #ff3b30;
+            --bg-color: #f5f5f7;
+            --card-bg: #ffffff;
+            --border-color: #e5e5ea;
+            --hint-color: #8e8e93;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--primary);
+        }
+
+        #app {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 600px;
+            height: 100vh;
+            max-height: 900px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (min-width: 600px) {
+            #app {
+                height: 90vh;
+                border-radius: 24px;
+            }
+        }
+
+        .hidden { display: none !important; }
+
+        .progress-header {
+            padding: 15px 20px 0 20px;
+            position: relative;
+        }
+        
+        .header-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .progress-info {
+            font-size: 0.9rem;
+            color: #8e8e93;
+            font-weight: bold;
+        }
+
+        .quit-btn {
+            background: none;
+            border: none;
+            color: #8e8e93;
+            font-size: 0.9rem;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 15px;
+            background: #f2f2f7;
+            font-weight: bold;
+        }
+        .quit-btn:hover { background: #e5e5ea; color: var(--error); }
+
+        .progress-track {
+            width: 100%;
+            height: 6px;
+            background: #f2f2f7;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-area {
+            padding: 20px 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        #question-text {
+            font-size: 1.4rem;
+            line-height: 1.6;
+            font-weight: 600;
+        }
+
+        .options-container {
+            flex: 0 1 auto;
+            padding: 0 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .option-btn {
+            background: #fff;
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px 20px;
+            text-align: left;
+            font-size: 1.1rem;
+            color: var(--primary);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--accent);
+            background: #f0f8ff;
+            transform: translateY(-1px);
+        }
+        
+        .opt-num {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 28px;
+            height: 28px;
+            background: #f2f2f7;
+            color: #8e8e93;
+            border-radius: 50%;
+            margin-right: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .opt-content { flex: 1; }
+
+        .option-btn.correct {
+            background-color: #e8f5e9 !important;
+            border-color: var(--success) !important;
+            color: #1b5e20 !important;
+        }
+        .option-btn.correct .opt-num { background: var(--success); color: white; }
+        .option-btn.correct::after {
+            content: "✓"; position: absolute; right: 20px; color: var(--success); font-weight: bold; font-size: 1.2rem;
+        }
+
+        .option-btn.wrong {
+            background-color: #ffebee !important;
+            border-color: var(--error) !important;
+            color: #b71c1c !important;
+        }
+        .option-btn.wrong .opt-num { background: var(--error); color: white; }
+        .option-btn.wrong::after {
+            content: "✕"; position: absolute; right: 20px; color: var(--error); font-weight: bold; font-size: 1.2rem;
+        }
+
+        .option-btn.dimmed { opacity: 0.4; pointer-events: none; }
+
+        .hint-container {
+            margin: 0 20px 5px 20px;
+            text-align: left;
+            flex-shrink: 0;
+        }
+        .hint-toggle {
+            background: none;
+            border: none;
+            color: var(--hint-color);
+            font-weight: normal;
+            cursor: pointer;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 15px;
+            gap: 8px;
+            transition: opacity 0.2s;
+        }
+        
+        .hint-arrow {
+            display: inline-block;
+            transition: transform 0.3s ease;
+            font-family: monospace;
+        }
+        .hint-arrow.closed { transform: rotate(180deg); }
+        .hint-arrow.open { transform: rotate(0deg); }
+
+        .hint-content {
+            background: #f2f2f7;
+            color: #555;
+            padding: 12px;
+            border-radius: 12px;
+            margin-top: 5px;
+            font-size: 0.95rem;
+            text-align: left;
+            border: 1px solid #e5e5ea;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        #feedback-area {
+            background: #f9f9f9;
+            border-top: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+            animation: slideUp 0.3s ease-out;
+            position: relative;
+            z-index: 10;
+            margin-top: auto;
+        }
+
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .result-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 10px;
+        }
+        .bg-correct { background: var(--success); }
+        .bg-wrong { background: var(--error); }
+
+        .explanation-text {
+            font-size: 1rem; color: #555; line-height: 1.5; margin-bottom: 20px;
+        }
+
+        .next-btn {
+            width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer;
+        }
+        .next-btn:hover { background: #000; }
+
+        .center-screen {
+            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; text-align: center;
+        }
+        h1 { font-size: 2rem; margin-bottom: 5px; }
+        
+        .config-box {
+            width: 100%; text-align: left; margin-top: 30px;
+        }
+        .config-label { font-weight: bold; display: block; margin-bottom: 8px; color: #555; }
+        select {
+            width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ccc; font-size: 1rem; background: white; margin-bottom: 20px;
+        }
+
+        .start-btn {
+            padding: 16px 60px; font-size: 1.2rem; background: var(--accent); color: white; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 5px 15px rgba(0, 122, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="start-screen" class="center-screen">
+        <h1>因数分解<br>演習ドリル</h1>
+        <p style="color:#888;">教科書準拠 (数I：数と式)</p>
+        
+        <div class="config-box">
+            <label class="config-label">出題範囲を選択</label>
+            <select id="section-select">
+                <option value="all">全範囲からランダム</option>
+                <option value="ex26">練習26の類題 (共通因数)</option>
+                <option value="ex27">練習27の類題 (完全平方式)</option>
+                <option value="ex28">練習28の類題 (2乗の差)</option>
+                <option value="ex29">練習29の類題 (x^2+(a+b)x+ab)</option>
+                <option value="ex30">練習30の類題 (符号の変化)</option>
+                <option value="ex32">練習32の類題 (たすきがけ)</option>
+            </select>
+
+            <label class="config-label">問題数</label>
+            <select id="q-count">
+                <option value="5" selected>5問 (サクッと)</option>
+                <option value="10">10問 (しっかり)</option>
+                <option value="20">20問 (ガッツリ)</option>
+            </select>
+        </div>
+
+        <button class="start-btn" onclick="startQuiz()">スタート</button>
+    </div>
+
+    <div id="quiz-screen" class="hidden" style="height:100%; display:flex; flex-direction:column;">
+        <div class="progress-header">
+            <div class="header-top-row">
+                <div class="progress-info">
+                    <span id="q-counter">Q 1</span>
+                    <span style="margin:0 10px; color:#e5e5ea;">|</span>
+                    <span id="score-counter">正解: 0</span>
+                </div>
+                <button class="quit-btn" onclick="quitQuiz()">× 中断</button>
+            </div>
+            <div class="progress-track">
+                <div id="progress-bar" class="progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="question-area">
+            <div id="question-text"></div>
+        </div>
+
+        <div class="options-container" id="options-list"></div>
+
+        <div class="hint-container" id="hint-area">
+            <button class="hint-toggle" onclick="toggleHint()">
+                ヒントを見る <span id="hint-arrow" class="hint-arrow closed">^</span>
+            </button>
+            <div id="hint-content" class="hint-content hidden"></div>
+        </div>
+
+        <div id="feedback-area" class="hidden">
+            <div>
+                <span id="result-badge" class="result-badge"></span>
+                <p id="explanation-text" class="explanation-text"></p>
+            </div>
+            <button class="next-btn" onclick="nextQuestion()">次の問題へ</button>
+        </div>
+    </div>
+
+    <div id="result-screen" class="center-screen hidden">
+        <h2 style="color:#888;">Result</h2>
+        <div style="font-size:4rem; font-weight:bold; margin:20px 0;">
+            <span id="final-score"></span> <span style="font-size:1.5rem; color:#888;">点</span>
+        </div>
+        <p id="result-msg" style="margin-bottom:30px; color:#555;"></p>
+        <button class="start-btn" onclick="returnToTitle()">タイトルに戻る</button>
+    </div>
+</div>
+
+<script>
+    const database = {
+        // 共通因数 [cite: 23, 24, 43-51]
+        ex26: [
+            { q: "\\( 4a + 4b \\) を因数分解しなさい。", opts: ["\\( 4(a+b) \\)", "\\( a(4+b) \\)", "\\( 4ab \\)", "\\( 4a(1+b) \\)"], correct: 0, hint: "共通な因数 4 でくくり出します。", exp: "\\( 4 \\) が共通因数です。\\( 4a + 4b = 4(a+b) \\)" },
+            { q: "\\( x^2 + 5x \\) を因数分解しなさい。", opts: ["\\( x(x+5) \\)", "\\( 5(x+1) \\)", "\\( x(x+5x) \\)", "\\( x^2(1+5) \\)"], correct: 0, hint: "共通な因数 x でくくり出します。", exp: "\\( x \\) が共通因数です。\\( x^2 + 5x = x(x+5) \\)" },
+            { q: "\\( 6x^2 - 12x \\) を因数分解しなさい。", opts: ["\\( 6(x^2-2x) \\)", "\\( 6x(x-2) \\)", "\\( x(6x-12) \\)", "\\( 2x(3x-6) \\)"], correct: 1, hint: "数字も文字も最大に引っぱり出します。", exp: "\\( 6x \\) が共通因数です。数字の6も忘れずに。\\( 6x(x-2) \\)" },
+            { q: "\\( xy - xz \\) を因数分解しなさい。", opts: ["\\( x(y-z) \\)", "\\( y(x-z) \\)", "\\( xyz \\)", "\\( x(y+z) \\)"], correct: 0, hint: "共通な因数 x でくくり出します。", exp: "\\( x \\) が共通因数です。\\( xy - xz = x(y-z) \\)" },
+            { q: "\\( 3a^2 + 6a \\) を因数分解しなさい。", opts: ["\\( 3a(a+2) \\)", "\\( 3(a^2+2a) \\)", "\\( a(3a+6) \\)", "\\( 3a(a+3) \\)"], correct: 0, hint: "3a でくくり出せます。", exp: "\\( 3a \\) が共通因数です。\\( 3a^2+6a = 3a(a+2) \\)" },
+            { q: "\\( m^2 - m \\) を因数分解しなさい。", opts: ["\\( m(m-1) \\)", "\\( m(m-0) \\)", "\\( m(m) \\)", "\\( m^2(1-m) \\)"], correct: 0, hint: "\\( m = m \\times 1 \\) と考えます。", exp: "\\( m \\) でくくると、後ろには 1 が残ります。\\( m(m-1) \\)" },
+            { q: "\\( 2ab + 4ac \\) を因数分解しなさい。", opts: ["\\( 2a(b+2c) \\)", "\\( 2ab(1+2c) \\)", "\\( a(2b+4c) \\)", "\\( 2(ab+2ac) \\)"], correct: 0, hint: "共通な因数 2a でくくり出します。", exp: "\\( 2a \\) が共通因数です。\\( 2ab + 4ac = 2a(b+2c) \\)" },
+            { q: "\\( x^2y + xy^2 \\) を因数分解しなさい。", opts: ["\\( xy(x+y) \\)", "\\( x^2(y+y^2) \\)", "\\( y^2(x^2+x) \\)", "\\( xy(x^2+y^2) \\)"], correct: 0, hint: "x と y の両方が1つずつ共通しています。", exp: "\\( xy \\) が共通因数です。\\( xy(x+y) \\)" },
+            { q: "\\( 7x - 7 \\) を因数分解しなさい。", opts: ["\\( 7(x-1) \\)", "\\( 7x \\)", "\\( 7(x-7) \\)", "\\( 7(1-x) \\)"], correct: 0, hint: "共通な因数 7 でくくります。", exp: "\\( 7(x-1) \\) となります。" },
+            { q: "\\( ax + bx + cx \\) を因数分解しなさい。", opts: ["\\( x(a+b+c) \\)", "\\( abcx \\)", "\\( x(a+b)+c \\)", "\\( ax(1+b+c) \\)"], correct: 0, hint: "すべての項にある x でくくります。", exp: "\\( x(a+b+c) \\) です。" },
+
+      { q: "\\( 5x - 10y \\) を因数分解しなさい。", opts: ["\\( 5(x-2y) \\)", "\\( 5(x-y) \\)", "\\( 5x(1-2y) \\)", "\\( 2(x-5y) \\)"], correct: 0, hint: "数字の5が共通しています。", exp: "\\( 5(x-2y) \\) です。" },
+            { q: "\\( 3x^2 + x \\) を因数分解しなさい。", opts: ["\\( x(3x+1) \\)", "\\( x(3x) \\)", "\\( 3x(x+1) \\)", "\\( x(3x+x) \\)"], correct: 0, hint: "\\( x \\) でくくると、後ろの項は1になります。", exp: "\\( x(3x+1) \\) です。" },
+            { q: "\\( 8a^2 - 4a \\) を因数分解しなさい。", opts: ["\\( 4a(2a-1) \\)", "\\( 4a(2a) \\)", "\\( 2a(4a-2) \\)", "\\( 4(2a^2-a) \\)"], correct: 0, hint: "\\( 4a \\) が共通因数です。", exp: "\\( 4a(2a-1) \\) です。" },
+            { q: "\\( abc + ab \\) を因数分解しなさい。", opts: ["\\( ab(c+1) \\)", "\\( ab(c) \\)", "\\( a(bc+b) \\)", "\\( c(ab+a) \\)"], correct: 0, hint: "\\( ab \\) が共通しています。", exp: "\\( ab(c+1) \\) です。" },
+            { q: "\\( x^3 - x^2 \\) を因数分解しなさい。", opts: ["\\( x^2(x-1) \\)", "\\( x(x^2-x) \\)", "\\( x^2(x) \\)", "\\( x(x-1) \\)"], correct: 0, hint: "次数が低い方（\\(x^2\\)）でくくります。", exp: "\\( x^2(x-1) \\) です。" },
+            { q: "\\( 12xy - 8y \\) を因数分解しなさい。", opts: ["\\( 4y(3x-2) \\)", "\\( 2y(6x-4) \\)", "\\( 4(3xy-2y) \\)", "\\( y(12x-8) \\)"], correct: 0, hint: "数字は4、文字はyが共通しています。", exp: "\\( 4y(3x-2) \\) です。" },
+            { q: "\\( -2x + 6 \\) を因数分解しなさい。", opts: ["\\( -2(x-3) \\)", "\\( 2(-x+3) \\)", "\\( -2(x+3) \\)", "\\( 2(x-3) \\)"], correct: 0, hint: "\\(-2\\) でくくると符号が変わります。", exp: "\\( -2(x-3) \\) です。" },
+            { q: "\\( 4x^2 + 2x + 6 \\) を因数分解しなさい。", opts: ["\\( 2(2x^2+x+3) \\)", "\\( 2x(2x+1)+6 \\)", "\\( 4(x^2+x+1) \\)", "\\( 2(2x^2+x+6) \\)"], correct: 0, hint: "数字の2だけが共通しています。", exp: "\\( 2(2x^2+x+3) \\) です。" },
+            { q: "\\( x^2y - xy^2 \\) を因数分解しなさい。", opts: ["\\( xy(x-y) \\)", "\\( x(xy-y^2) \\)", "\\( y(x^2-xy) \\)", "\\( xy(x+y) \\)"], correct: 0, hint: "\\( xy \\) でくくります。", exp: "\\( xy(x-y) \\) です。" },
+            { q: "\\( 3ax - 6ay + 9az \\) を因数分解しなさい。", opts: ["\\( 3a(x-2y+3z) \\)", "\\( 3a(x-y+z) \\)", "\\( 3(ax-2ay+3az) \\)", "\\( a(3x-6y+9z) \\)"], correct: 0, hint: "\\( 3a \\) がすべての項にあります。", exp: "\\( 3a(x-2y+3z) \\) です。" }
+        ],
+        // 完全平方式 [cite: 56, 61, 62, 78-88]
+        ex27: [
+            { q: "\\( x^2 + 2x + 1 \\) を因数分解しなさい。", opts: ["\\( (x+1)^2 \\)", "\\( (x-1)^2 \\)", "\\( (x+1)(x-1) \\)", "\\( x(x+2)+1 \\)"], correct: 0, hint: "公式 \\( (a+b)^2 = a^2+2ab+b^2 \\) を使います。", exp: "\\( 1 = 1^2 \\) なので、\\( (x+1)^2 \\) となります。" },
+            { q: "\\( x^2 - 4x + 4 \\) を因数分解しなさい。", opts: ["\\( (x-2)^2 \\)", "\\( (x+2)^2 \\)", "\\( (x-4)^2 \\)", "\\( (x-2)(x+2) \\)"], correct: 0, hint: "真ん中がマイナスなので \\( (a-b)^2 \\) です。", exp: "\\( 4 = 2^2 \\) で、真ん中が \\( -2 \\times 2x \\) なので \\( (x-2)^2 \\) です。" },
+            { q: "\\( x^2 + 10x + 25 \\) を因数分解しなさい。", opts: ["\\( (x+5)^2 \\)", "\\( (x-5)^2 \\)", "\\( (x+25)^2 \\)", "\\( (x+2)(x+5) \\)"], correct: 0, hint: "\\( 25 = 5^2 \\) です。", exp: "\\( (x+5)^2 \\) です。" },
+            { q: "\\( x^2 - 14x + 49 \\) を因数分解しなさい。", opts: ["\\( (x-7)^2 \\)", "\\( (x+7)^2 \\)", "\\( (x-14)^2 \\)", "\\( (x-7)(x+7) \\)"], correct: 0, hint: "\\( 49 = 7^2 \\) です。", exp: "\\( (x-7)^2 \\) です。" },
+            { q: "\\( 4x^2 + 4x + 1 \\) を因数分解しなさい。", opts: ["\\( (2x+1)^2 \\)", "\\( (2x-1)^2 \\)", "\\( (4x+1)^2 \\)", "\\( (x+2)^2 \\)"], correct: 0, hint: "\\( 4x^2 = (2x)^2 \\) です。", exp: "\\( (2x)^2 + 2(2x)(1) + 1^2 \\) と考え、\\( (2x+1)^2 \\) となります。" },
+            { q: "\\( 9x^2 - 6x + 1 \\) を因数分解しなさい。", opts: ["\\( (3x-1)^2 \\)", "\\( (3x+1)^2 \\)", "\\( (9x-1)^2 \\)", "\\( (3x-1)(3x+1) \\)"], correct: 0, hint: "\\( 9x^2 = (3x)^2 \\) です。", exp: "\\( (3x-1)^2 \\) です。" },
+            { q: "\\( x^2 + 18x + 81 \\) を因数分解しなさい。", opts: ["\\( (x+9)^2 \\)", "\\( (x-9)^2 \\)", "\\( (x+18)^2 \\)", "\\( (x+9)(x-9) \\)"], correct: 0, hint: "\\( 81 = 9^2 \\) です。", exp: "\\( (x+9)^2 \\) です。" },
+            { q: "\\( 25x^2 + 20x + 4 \\) を因数分解しなさい。", opts: ["\\( (5x+2)^2 \\)", "\\( (5x-2)^2 \\)", "\\( (25x+4)^2 \\)", "\\( (5x+4)^2 \\)"], correct: 0, hint: "\\( 25x^2 = (5x)^2 \\)、\\( 4 = 2^2 \\) です。", exp: "\\( (5x+2)^2 \\) です。" },
+            { q: "\\( x^2 - 20x + 100 \\) を因数分解しなさい。", opts: ["\\( (x-10)^2 \\)", "\\( (x+10)^2 \\)", "\\( (x-100)^2 \\)", "\\( (x-20)^2 \\)"], correct: 0, hint: "\\( 100 = 10^2 \\) です。", exp: "\\( (x-10)^2 \\) です。" },
+            { q: "\\( 16x^2 - 8x + 1 \\) を因数分解しなさい。", opts: ["\\( (4x-1)^2 \\)", "\\( (4x+1)^2 \\)", "\\( (4x-2)^2 \\)", "\\( (16x-1)^2 \\)"], correct: 0, hint: "\\( 16x^2 = (4x)^2 \\) です。", exp: "\\( (4x-1)^2 \\) です。" },
+{ q: "\\( x^2 + 6x + 9 \\) を因数分解しなさい。", opts: ["\\( (x+3)^2 \\)", "\\( (x-3)^2 \\)", "\\( (x+9)^2 \\)", "\\( (x+1)(x+9) \\)"], correct: 0, hint: "\\( 9=3^2 \\) です。", exp: "\\( (x+3)^2 \\) です。" },
+            { q: "\\( x^2 - 12x + 36 \\) を因数分解しなさい。", opts: ["\\( (x-6)^2 \\)", "\\( (x+6)^2 \\)", "\\( (x-12)^2 \\)", "\\( (x-4)(x-9) \\)"], correct: 0, hint: "\\( 36=6^2 \\) です。", exp: "\\( (x-6)^2 \\) です。" },
+            { q: "\\( x^2 + 8x + 16 \\) を因数分解しなさい。", opts: ["\\( (x+4)^2 \\)", "\\( (x+8)^2 \\)", "\\( (x+2)(x+8) \\)", "\\( (x-4)^2 \\)"], correct: 0, hint: "\\( 16=4^2 \\) です。", exp: "\\( (x+4)^2 \\) です。" },
+            { q: "\\( x^2 - 10x + 25 \\) を因数分解しなさい。", opts: ["\\( (x-5)^2 \\)", "\\( (x+5)^2 \\)", "\\( (x-10)^2 \\)", "\\( (x-1)(x-25) \\)"], correct: 0, hint: "\\( 25=5^2 \\) です。", exp: "\\( (x-5)^2 \\) です。" },
+            { q: "\\( x^2 + 16x + 64 \\) を因数分解しなさい。", opts: ["\\( (x+8)^2 \\)", "\\( (x+4)^2 \\)", "\\( (x+16)^2 \\)", "\\( (x-8)^2 \\)"], correct: 0, hint: "\\( 64=8^2 \\) です。", exp: "\\( (x+8)^2 \\) です。" },
+            { q: "\\( 4x^2 - 12x + 9 \\) を因数分解しなさい。", opts: ["\\( (2x-3)^2 \\)", "\\( (2x+3)^2 \\)", "\\( (4x-3)^2 \\)", "\\( (2x-9)^2 \\)"], correct: 0, hint: "\\( 4x^2=(2x)^2 \\)、\\( 9=3^2 \\) です。", exp: "\\( (2x-3)^2 \\) です。" },
+            { q: "\\( 9x^2 + 30x + 25 \\) を因数分解しなさい。", opts: ["\\( (3x+5)^2 \\)", "\\( (3x-5)^2 \\)", "\\( (9x+5)^2 \\)", "\\( (3x+25)^2 \\)"], correct: 0, hint: "\\( 9x^2=(3x)^2 \\)、\\( 25=5^2 \\) です。", exp: "\\( (3x+5)^2 \\) です。" },
+            { q: "\\( 36x^2 - 12x + 1 \\) を因数分解しなさい。", opts: ["\\( (6x-1)^2 \\)", "\\( (6x+1)^2 \\)", "\\( (6x-1)(6x+1) \\)", "\\( (36x-1)^2 \\)"], correct: 0, hint: "\\( 36x^2=(6x)^2 \\) です。", exp: "\\( (6x-1)^2 \\) です。" },
+            { q: "\\( x^2 + 24x + 144 \\) を因数分解しなさい。", opts: ["\\( (x+12)^2 \\)", "\\( (x-12)^2 \\)", "\\( (x+24)^2 \\)", "\\( (x+6)(x+24) \\)"], correct: 0, hint: "\\( 144=12^2 \\) です。", exp: "\\( (x+12)^2 \\) です。" },
+            { q: "\\( 49x^2 - 28x + 4 \\) を因数分解しなさい。", opts: ["\\( (7x-2)^2 \\)", "\\( (7x+2)^2 \\)", "\\( (49x-4)^2 \\)", "\\( (7x-4)^2 \\)"], correct: 0, hint: "\\( 49x^2=(7x)^2 \\)、\\( 4=2^2 \\) です。", exp: "\\( (7x-2)^2 \\) です。" }
+        ],
+        // 2乗の差 [cite: 97, 101, 103, 114-119]
+        ex28: [
+            { q: "\\( x^2 - 1 \\) を因数分解しなさい。", opts: ["\\( (x+1)(x-1) \\)", "\\( (x-1)^2 \\)", "\\( (x+1)^2 \\)", "\\( x(x-1) \\)"], correct: 0, hint: "公式 \\( a^2-b^2 = (a+b)(a-b) \\) を使います。", exp: "\\( x^2 - 1^2 = (x+1)(x-1) \\) です。" },
+            { q: "\\( x^2 - 9 \\) を因数分解しなさい。", opts: ["\\( (x+3)(x-3) \\)", "\\( (x-3)^2 \\)", "\\( (x-9)(x+9) \\)", "\\( (x+3)^2 \\)"], correct: 0, hint: "\\( 9 = 3^2 \\) です。", exp: "\\( (x+3)(x-3) \\) です。" },
+            { q: "\\( x^2 - 36 \\) を因数分解しなさい。", opts: ["\\( (x+6)(x-6) \\)", "\\( (x-6)^2 \\)", "\\( (x+18)(x-18) \\)", "\\( (x+6)^2 \\)"], correct: 0, hint: "\\( 36 = 6^2 \\) です。", exp: "\\( (x+6)(x-6) \\) です。" },
+            { q: "\\( x^2 - 100 \\) を因数分解しなさい。", opts: ["\\( (x+10)(x-10) \\)", "\\( (x-10)^2 \\)", "\\( (x+50)(x-50) \\)", "\\( (x-100)(x+1) \\)"], correct: 0, hint: "\\( 100 = 10^2 \\) です。", exp: "\\( (x+10)(x-10) \\) です。" },
+            { q: "\\( 4x^2 - 1 \\) を因数分解しなさい。", opts: ["\\( (2x+1)(2x-1) \\)", "\\( (4x+1)(4x-1) \\)", "\\( (2x-1)^2 \\)", "\\( (x+1)(x-1) \\)"], correct: 0, hint: "\\( 4x^2 = (2x)^2 \\) です。", exp: "\\( (2x)^2 - 1^2 = (2x+1)(2x-1) \\) です。" },
+            { q: "\\( 9x^2 - 16 \\) を因数分解しなさい。", opts: ["\\( (3x+4)(3x-4) \\)", "\\( (3x-4)^2 \\)", "\\( (9x+4)(9x-4) \\)", "\\( (3x+8)(3x-8) \\)"], correct: 0, hint: "\\( 9x^2 = (3x)^2 \\)、\\( 16 = 4^2 \\) です。", exp: "\\( (3x+4)(3x-4) \\) です。" },
+            { q: "\\( x^2 - y^2 \\) を因数分解しなさい。", opts: ["\\( (x+y)(x-y) \\)", "\\( (x-y)^2 \\)", "\\( (x+y)^2 \\)", "\\( x(x-y) \\)"], correct: 0, hint: "基本の公式通りです。", exp: "\\( (x+y)(x-y) \\) です。" },
+            { q: "\\( 25x^2 - 4 \\) を因数分解しなさい。", opts: ["\\( (5x+2)(5x-2) \\)", "\\( (5x-2)^2 \\)", "\\( (25x+2)(25x-2) \\)", "\\( (5x+4)(5x-4) \\)"], correct: 0, hint: "\\( 25x^2 = (5x)^2 \\) です。", exp: "\\( (5x+2)(5x-2) \\) です。" },
+            { q: "\\( x^2 - 81 \\) を因数分解しなさい。", opts: ["\\( (x+9)(x-9) \\)", "\\( (x-9)^2 \\)", "\\( (x+81)(x-1) \\)", "\\( (x+9)^2 \\)"], correct: 0, hint: "\\( 81 = 9^2 \\) です。", exp: "\\( (x+9)(x-9) \\) です。" },
+            { q: "\\( 49x^2 - 64y^2 \\) を因数分解しなさい。", opts: ["\\( (7x+8y)(7x-8y) \\)", "\\( (7x-8y)^2 \\)", "\\( (49x+64y)(49x-64y) \\)", "\\( (7x+4y)(7x-4y) \\)"], correct: 0, hint: "それぞれ何かの2乗になっています。", exp: "\\( (7x)^2 - (8y)^2 = (7x+8y)(7x-8y) \\) です。" },
+{ q: "\\( x^2 - 16 \\) を因数分解しなさい。", opts: ["\\( (x+4)(x-4) \\)", "\\( (x-4)^2 \\)", "\\( (x+8)(x-8) \\)", "\\( (x+2)(x-8) \\)"], correct: 0, hint: "\\( 16=4^2 \\) です。", exp: "\\( (x+4)(x-4) \\) です。" },
+            { q: "\\( x^2 - 49 \\) を因数分解しなさい。", opts: ["\\( (x+7)(x-7) \\)", "\\( (x-7)^2 \\)", "\\( (x+49)(x-1) \\)", "\\( (x+7)^2 \\)"], correct: 0, hint: "\\( 49=7^2 \\) です。", exp: "\\( (x+7)(x-7) \\) です。" },
+            { q: "\\( x^2 - 64 \\) を因数分解しなさい。", opts: ["\\( (x+8)(x-8) \\)", "\\( (x-8)^2 \\)", "\\( (x+32)(x-2) \\)", "\\( (x+4)(x-16) \\)"], correct: 0, hint: "\\( 64=8^2 \\) です。", exp: "\\( (x+8)(x-8) \\) です。" },
+            { q: "\\( x^2 - 25 \\) を因数分解しなさい。", opts: ["\\( (x+5)(x-5) \\)", "\\( (x-5)^2 \\)", "\\( (x+25)(x-1) \\)", "\\( (x+10)(x-15) \\)"], correct: 0, hint: "\\( 25=5^2 \\) です。", exp: "\\( (x+5)(x-5) \\) です。" },
+            { q: "\\( x^2 - 121 \\) を因数分解しなさい。", opts: ["\\( (x+11)(x-11) \\)", "\\( (x-11)^2 \\)", "\\( (x+12)(x-10) \\)", "\\( (x+11)^2 \\)"], correct: 0, hint: "\\( 121=11^2 \\) です。", exp: "\\( (x+11)(x-11) \\) です。" },
+            { q: "\\( 16x^2 - 9 \\) を因数分解しなさい。", opts: ["\\( (4x+3)(4x-3) \\)", "\\( (4x-3)^2 \\)", "\\( (16x+9)(x-1) \\)", "\\( (4x+9)(4x-1) \\)"], correct: 0, hint: "\\( 16x^2=(4x)^2 \\)、\\( 9=3^2 \\) です。", exp: "\\( (4x+3)(4x-3) \\) です。" },
+            { q: "\\( 36x^2 - 25 \\) を因数分解しなさい。", opts: ["\\( (6x+5)(6x-5) \\)", "\\( (6x-5)^2 \\)", "\\( (6x+25)(6x-1) \\)", "\\( (36x+5)(x-5) \\)"], correct: 0, hint: "\\( 36x^2=(6x)^2 \\)、\\( 25=5^2 \\) です。", exp: "\\( (6x+5)(6x-5) \\) です。" },
+            { q: "\\( x^2 - 4y^2 \\) を因数分解しなさい。", opts: ["\\( (x+2y)(x-2y) \\)", "\\( (x-2y)^2 \\)", "\\( (x+4y)(x-y) \\)", "\\( (x+y)(x-4y) \\)"], correct: 0, hint: "\\( 4y^2=(2y)^2 \\) です。", exp: "\\( (x+2y)(x-2y) \\) です。" },
+            { q: "\\( 9x^2 - 49y^2 \\) を因数分解しなさい。", opts: ["\\( (3x+7y)(3x-7y) \\)", "\\( (3x-7y)^2 \\)", "\\( (9x+7y)(x-7y) \\)", "\\( (3x+49y)(3x-y) \\)"], correct: 0, hint: "\\( 9x^2=(3x)^2 \\)、\\( 49y^2=(7y)^2 \\) です。", exp: "\\( (3x+7y)(3x-7y) \\) です。" },
+            { q: "\\( 100x^2 - 1 \\) を因数分解しなさい。", opts: ["\\( (10x+1)(10x-1) \\)", "\\( (10x-1)^2 \\)", "\\( (100x+1)(x-1) \\)", "\\( (10x+1)^2 \\)"], correct: 0, hint: "\\( 100x^2=(10x)^2 \\) です。", exp: "\\( (10x+1)(10x-1) \\) です。" }
+        ],
+        // たして、かけて [cite: 125, 129, 132, 167-172]
+        ex29: [
+            { q: "\\( x^2 + 5x + 4 \\) を因数分解しなさい。", opts: ["\\( (x+1)(x+4) \\)", "\\( (x+2)(x+2) \\)", "\\( (x+5)(x+4) \\)", "\\( (x+1)(x+5) \\)"], correct: 0, hint: "たして5、かけて4になる2数を探します。", exp: "1と4のペアです。\\( (x+1)(x+4) \\)" },
+            { q: "\\( x^2 + 3x + 2 \\) を因数分解しなさい。", opts: ["\\( (x+1)(x+2) \\)", "\\( (x+1)(x+3) \\)", "\\( (x+2)(x+2) \\)", "\\( (x-1)(x-2) \\)"], correct: 0, hint: "たして3、かけて2になる数。", exp: "1と2です。\\( (x+1)(x+2) \\)" },
+            { q: "\\( x^2 + 7x + 6 \\) を因数分解しなさい。", opts: ["\\( (x+1)(x+6) \\)", "\\( (x+2)(x+3) \\)", "\\( (x+6)(x+6) \\)", "\\( (x+7)(x+1) \\)"], correct: 0, hint: "たして7、かけて6になる数。", exp: "1と6です。\\( (x+1)(x+6) \\)" },
+            { q: "\\( x^2 + 5x + 6 \\) を因数分解しなさい。", opts: ["\\( (x+2)(x+3) \\)", "\\( (x+1)(x+6) \\)", "\\( (x+5)(x+1) \\)", "\\( (x-2)(x-3) \\)"], correct: 0, hint: "たして5、かけて6になる数。", exp: "2と3です。\\( (x+2)(x+3) \\)" },
+            { q: "\\( x^2 + 8x + 12 \\) を因数分解しなさい。", opts: ["\\( (x+2)(x+6) \\)", "\\( (x+3)(x+4) \\)", "\\( (x+1)(x+12) \\)", "\\( (x+8)(x+4) \\)"], correct: 0, hint: "たして8、かけて12になる数。", exp: "2と6です。\\( (x+2)(x+6) \\)" },
+            { q: "\\( x^2 + 9x + 20 \\) を因数分解しなさい。", opts: ["\\( (x+4)(x+5) \\)", "\\( (x+2)(x+10) \\)", "\\( (x+1)(x+20) \\)", "\\( (x+3)(x+6) \\)"], correct: 0, hint: "たして9、かけて20になる数。", exp: "4と5です。\\( (x+4)(x+5) \\)" },
+            { q: "\\( x^2 + 10x + 21 \\) を因数分解しなさい。", opts: ["\\( (x+3)(x+7) \\)", "\\( (x+1)(x+10) \\)", "\\( (x+2)(x+8) \\)", "\\( (x+21)(x+1) \\)"], correct: 0, hint: "たして10、かけて21になる数。", exp: "3と7です。\\( (x+3)(x+7) \\)" },
+            { q: "\\( x^2 + 11x + 18 \\) を因数分解しなさい。", opts: ["\\( (x+2)(x+9) \\)", "\\( (x+3)(x+6) \\)", "\\( (x+1)(x+10) \\)", "\\( (x+11)(x+7) \\)"], correct: 0, hint: "たして11、かけて18。", exp: "2と9です。\\( (x+2)(x+9) \\)" },
+            { q: "\\( x^2 + 13x + 40 \\) を因数分解しなさい。", opts: ["\\( (x+5)(x+8) \\)", "\\( (x+4)(x+10) \\)", "\\( (x+2)(x+20) \\)", "\\( (x+3)(x+10) \\)"], correct: 0, hint: "たして13、かけて40。", exp: "5と8です。\\( (x+5)(x+8) \\)" },
+            { q: "\\( x^2 + 8x + 7 \\) を因数分解しなさい。", opts: ["\\( (x+1)(x+7) \\)", "\\( (x+2)(x+4) \\)", "\\( (x+8)(x+1) \\)", "\\( (x-1)(x-7) \\)"], correct: 0, hint: "たして8、かけて7。", exp: "1と7です。\\( (x+1)(x+7) \\)" },
+{ q: "\\( x^2 + 4x + 3 \\) を因数分解しなさい。", opts: ["\\( (x+1)(x+3) \\)", "\\( (x+2)(x+2) \\)", "\\( (x-1)(x-3) \\)", "\\( (x+4)(x+1) \\)"], correct: 0, hint: "たして4、かけて3。", exp: "1と3です。\\( (x+1)(x+3) \\)" },
+            { q: "\\( x^2 + 6x + 5 \\) を因数分解しなさい。", opts: ["\\( (x+1)(x+5) \\)", "\\( (x+2)(x+3) \\)", "\\( (x+6)(x-1) \\)", "\\( (x-1)(x-5) \\)"], correct: 0, hint: "たして6、かけて5。", exp: "1と5です。\\( (x+1)(x+5) \\)" },
+            { q: "\\( x^2 + 6x + 8 \\) を因数分解しなさい。", opts: ["\\( (x+2)(x+4) \\)", "\\( (x+1)(x+8) \\)", "\\( (x+3)(x+3) \\)", "\\( (x-2)(x-4) \\)"], correct: 0, hint: "たして6、かけて8。", exp: "2と4です。\\( (x+2)(x+4) \\)" },
+            { q: "\\( x^2 + 7x + 10 \\) を因数分解しなさい。", opts: ["\\( (x+2)(x+5) \\)", "\\( (x+1)(x+10) \\)", "\\( (x+3)(x+4) \\)", "\\( (x-2)(x-5) \\)"], correct: 0, hint: "たして7、かけて10。", exp: "2と5です。\\( (x+2)(x+5) \\)" },
+            { q: "\\( x^2 + 7x + 12 \\) を因数分解しなさい。", opts: ["\\( (x+3)(x+4) \\)", "\\( (x+2)(x+6) \\)", "\\( (x+1)(x+12) \\)", "\\( (x-3)(x-4) \\)"], correct: 0, hint: "たして7、かけて12。", exp: "3と4です。\\( (x+3)(x+4) \\)" },
+            { q: "\\( x^2 + 9x + 14 \\) を因数分解しなさい。", opts: ["\\( (x+2)(x+7) \\)", "\\( (x+1)(x+14) \\)", "\\( (x+3)(x+6) \\)", "\\( (x-2)(x-7) \\)"], correct: 0, hint: "たして9、かけて14。", exp: "2と7です。\\( (x+2)(x+7) \\)" },
+            { q: "\\( x^2 + 9x + 18 \\) を因数分解しなさい。", opts: ["\\( (x+3)(x+6) \\)", "\\( (x+2)(x+9) \\)", "\\( (x+1)(x+18) \\)", "\\( (x-3)(x-6) \\)"], correct: 0, hint: "たして9、かけて18。", exp: "3と6です。\\( (x+3)(x+6) \\)" },
+            { q: "\\( x^2 + 10x + 16 \\) を因数分解しなさい。", opts: ["\\( (x+2)(x+8) \\)", "\\( (x+4)(x+6) \\)", "\\( (x+1)(x+16) \\)", "\\( (x+5)(x+5) \\)"], correct: 0, hint: "たして10、かけて16。", exp: "2と8です。\\( (x+2)(x+8) \\)" },
+            { q: "\\( x^2 + 11x + 24 \\) を因数分解しなさい。", opts: ["\\( (x+3)(x+8) \\)", "\\( (x+4)(x+6) \\)", "\\( (x+2)(x+12) \\)", "\\( (x-3)(x-8) \\)"], correct: 0, hint: "たして11、かけて24。", exp: "3と8です。\\( (x+3)(x+8) \\)" },
+            { q: "\\( x^2 + 12x + 27 \\) を因数分解しなさい。", opts: ["\\( (x+3)(x+9) \\)", "\\( (x+1)(x+27) \\)", "\\( (x+4)(x+8) \\)", "\\( (x-3)(x-9) \\)"], correct: 0, hint: "たして12、かけて27。", exp: "3と9です。\\( (x+3)(x+9) \\)" }
+        ],
+        // 符号が混ざるもの [cite: 177-186]
+        ex30: [
+            { q: "\\( x^2 - 5x + 6 \\) を因数分解しなさい。", opts: ["\\( (x-2)(x-3) \\)", "\\( (x+2)(x+3) \\)", "\\( (x-1)(x-6) \\)", "\\( (x+1)(x+6) \\)"], correct: 0, hint: "たして-5、かけて+6。", exp: "両方マイナスのペア（-2と-3）です。\\( (x-2)(x-3) \\)" },
+            { q: "\\( x^2 + x - 6 \\) を因数分解しなさい。", opts: ["\\( (x+3)(x-2) \\)", "\\( (x-3)(x+2) \\)", "\\( (x+6)(x-1) \\)", "\\( (x-6)(x+1) \\)"], correct: 0, hint: "たして+1、かけて-6。", exp: "3と-2のペアです。\\( (x+3)(x-2) \\)" },
+            { q: "\\( x^2 - x - 12 \\) を因数分解しなさい。", opts: ["\\( (x-4)(x+3) \\)", "\\( (x+4)(x-3) \\)", "\\( (x-6)(x+2) \\)", "\\( (x+6)(x-2) \\)"], correct: 0, hint: "たして-1、かけて-12。", exp: "-4と3のペアです。\\( (x-4)(x+3) \\)" },
+            { q: "\\( x^2 - 8x + 15 \\) を因数分解しなさい。", opts: ["\\( (x-3)(x-5) \\)", "\\( (x+3)(x+5) \\)", "\\( (x-1)(x-15) \\)", "\\( (x-2)(x-4) \\)"], correct: 0, hint: "たして-8、かけて+15。", exp: "-3と-5のペアです。\\( (x-3)(x-5) \\)" },
+            { q: "\\( x^2 + 2x - 15 \\) を因数分解しなさい。", opts: ["\\( (x+5)(x-3) \\)", "\\( (x-5)(x+3) \\)", "\\( (x+15)(x-1) \\)", "\\( (x+3)(x-5) \\)"], correct: 0, hint: "たして+2、かけて-15。", exp: "5と-3のペアです。\\( (x+5)(x-3) \\)" },
+            { q: "\\( x^2 - 2x - 15 \\) を因数分解しなさい。", opts: ["\\( (x-5)(x+3) \\)", "\\( (x+5)(x-3) \\)", "\\( (x-15)(x+1) \\)", "\\( (x-3)(x+5) \\)"], correct: 0, hint: "たして-2、かけて-15。", exp: "-5と3のペアです。\\( (x-5)(x+3) \\)" },
+            { q: "\\( x^2 - 10x + 21 \\) を因数分解しなさい。", opts: ["\\( (x-3)(x-7) \\)", "\\( (x+3)(x+7) \\)", "\\( (x-1)(x-21) \\)", "\\( (x+3)(x-7) \\)"], correct: 0, hint: "たして-10、かけて+21。", exp: "-3と-7です。\\( (x-3)(x-7) \\)" },
+            { q: "\\( x^2 + 5x - 14 \\) を因数分解しなさい。", opts: ["\\( (x+7)(x-2) \\)", "\\( (x-7)(x+2) \\)", "\\( (x+14)(x-1) \\)", "\\( (x+2)(x-7) \\)"], correct: 0, hint: "たして+5、かけて-14。", exp: "7と-2です。\\( (x+7)(x-2) \\)" },
+            { q: "\\( x^2 - 3x - 10 \\) を因数分解しなさい。", opts: ["\\( (x-5)(x+2) \\)", "\\( (x+5)(x-2) \\)", "\\( (x-10)(x+1) \\)", "\\( (x-2)(x+5) \\)"], correct: 0, hint: "たして-3、かけて-10。", exp: "-5と2です。\\( (x-5)(x+2) \\)" },
+            { q: "\\( x^2 - 7x + 12 \\) を因数分解しなさい。", opts: ["\\( (x-3)(x-4) \\)", "\\( (x+3)(x+4) \\)", "\\( (x-2)(x-6) \\)", "\\( (x-1)(x-12) \\)"], correct: 0, hint: "たして-7、かけて+12。", exp: "-3と-4です。\\( (x-3)(x-4) \\)" },
+{ q: "\\( x^2 - 4x + 3 \\) を因数分解しなさい。", opts: ["\\( (x-1)(x-3) \\)", "\\( (x+1)(x+3) \\)", "\\( (x-1)(x+3) \\)", "\\( (x+1)(x-3) \\)"], correct: 0, hint: "たして-4、かけて3。", exp: "-1と-3です。\\( (x-1)(x-3) \\)" },
+            { q: "\\( x^2 - 3x + 2 \\) を因数分解しなさい。", opts: ["\\( (x-1)(x-2) \\)", "\\( (x+1)(x+2) \\)", "\\( (x-3)(x+1) \\)", "\\( (x-1)(x+2) \\)"], correct: 0, hint: "たして-3、かけて2。", exp: "-1と-2です。\\( (x-1)(x-2) \\)" },
+            { q: "\\( x^2 + 2x - 8 \\) を因数分解しなさい。", opts: ["\\( (x+4)(x-2) \\)", "\\( (x-4)(x+2) \\)", "\\( (x+8)(x-1) \\)", "\\( (x-4)(x-2) \\)"], correct: 0, hint: "たして+2、かけて-8。", exp: "4と-2です。\\( (x+4)(x-2) \\)" },
+            { q: "\\( x^2 - 2x - 8 \\) を因数分解しなさい。", opts: ["\\( (x-4)(x+2) \\)", "\\( (x+4)(x-2) \\)", "\\( (x-8)(x+1) \\)", "\\( (x-4)(x-2) \\)"], correct: 0, hint: "たして-2、かけて-8。", exp: "-4と2です。\\( (x-4)(x+2) \\)" },
+            { q: "\\( x^2 - 6x + 8 \\) を因数分解しなさい。", opts: ["\\( (x-2)(x-4) \\)", "\\( (x+2)(x+4) \\)", "\\( (x-1)(x-8) \\)", "\\( (x-6)(x-2) \\)"], correct: 0, hint: "たして-6、かけて8。", exp: "-2と-4です。\\( (x-2)(x-4) \\)" },
+            { q: "\\( x^2 + 3x - 10 \\) を因数分解しなさい。", opts: ["\\( (x+5)(x-2) \\)", "\\( (x-5)(x+2) \\)", "\\( (x+10)(x-1) \\)", "\\( (x+2)(x-5) \\)"], correct: 0, hint: "たして3、かけて-10。", exp: "5と-2です。\\( (x+5)(x-2) \\)" },
+            { q: "\\( x^2 - 9x + 18 \\) を因数分解しなさい。", opts: ["\\( (x-3)(x-6) \\)", "\\( (x+3)(x+6) \\)", "\\( (x-2)(x-9) \\)", "\\( (x-1)(x-18) \\)"], correct: 0, hint: "たして-9、かけて18。", exp: "-3と-6です。\\( (x-3)(x-6) \\)" },
+            { q: "\\( x^2 + x - 20 \\) を因数分解しなさい。", opts: ["\\( (x+5)(x-4) \\)", "\\( (x-5)(x+4) \\)", "\\( (x+10)(x-2) \\)", "\\( (x+4)(x-5) \\)"], correct: 0, hint: "たして1、かけて-20。", exp: "5と-4です。\\( (x+5)(x-4) \\)" },
+            { q: "\\( x^2 - x - 20 \\) を因数分解しなさい。", opts: ["\\( (x-5)(x+4) \\)", "\\( (x+5)(x-4) \\)", "\\( (x-10)(x+2) \\)", "\\( (x-4)(x+5) \\)"], correct: 0, hint: "たして-1、かけて-20。", exp: "-5と4です。\\( (x-5)(x+4) \\)" },
+            { q: "\\( x^2 - 5x - 24 \\) を因数分解しなさい。", opts: ["\\( (x-8)(x+3) \\)", "\\( (x+8)(x-3) \\)", "\\( (x-6)(x+4) \\)", "\\( (x-12)(x+2) \\)"], correct: 0, hint: "たして-5、かけて-24。", exp: "-8と3です。\\( (x-8)(x+3) \\)" }
+        ],
+        // たすきがけ [cite: 195, 281, 323-333]
+        ex32: [
+            { q: "\\( 2x^2 + 3x + 1 \\) を因数分解しなさい。", opts: ["\\( (2x+1)(x+1) \\)", "\\( (2x-1)(x-1) \\)", "\\( (x+2)(x+1) \\)", "\\( (2x+1)(2x+1) \\)"], correct: 0, hint: "かけて2, かけて1, 斜めにかけて足して3。", exp: "たすきがけ：(1,1)と(2,1)の組み合わせ。\\( (2x+1)(x+1) \\)" },
+            { q: "\\( 3x^2 + 7x + 2 \\) を因数分解しなさい。", opts: ["\\( (3x+1)(x+2) \\)", "\\( (3x+2)(x+1) \\)", "\\( (x+3)(x+2) \\)", "\\( (3x-1)(x-2) \\)"], correct: 0, hint: "たすきがけを使います。末尾の2を 2x1 か 1x2 か。", exp: "\\( (3x+1)(x+2) \\) です。斜めに計算すると \\( 6+1=7 \\) となります。" },
+            { q: "\\( 2x^2 - 5x + 3 \\) を因数分解しなさい。", opts: ["\\( (2x-3)(x-1) \\)", "\\( (2x+3)(x+1) \\)", "\\( (2x-1)(x-3) \\)", "\\( (x-2)(x-3) \\)"], correct: 0, hint: "かけて+3, 足して-5 なので両方マイナス。", exp: "\\( (2x-3)(x-1) \\) です。" },
+            { q: "\\( 5x^2 + 16x + 3 \\) を因数分解しなさい。", opts: ["\\( (5x+1)(x+3) \\)", "\\( (5x+3)(x+1) \\)", "\\( (x+5)(x+3) \\)", "\\( (5x-1)(x-3) \\)"], correct: 0, hint: "5と3をどう配置すれば16になるか。", exp: "\\( (5x+1)(x+3) \\) です。\\( 15+1=16 \\) となります。" },
+            { q: "\\( 3x^2 - 8x - 3 \\) を因数分解しなさい。", opts: ["\\( (3x+1)(x-3) \\)", "\\( (3x-1)(x+3) \\)", "\\( (3x-3)(x+1) \\)", "\\( (3x+3)(x-1) \\)"], correct: 0, hint: "かけて-3, 足して-8。", exp: "\\( (3x+1)(x-3) \\) です。\\( -9+1=-8 \\) となります。" },
+            { q: "\\( 2x^2 + 7x + 3 \\) を因数分解しなさい。", opts: ["\\( (2x+1)(x+3) \\)", "\\( (2x+3)(x+1) \\)", "\\( (x+2)(x+3) \\)", "\\( (2x-1)(x-3) \\)"], correct: 0, hint: "2と3のたすきがけ。", exp: "\\( (2x+1)(x+3) \\) です。" },
+            { q: "\\( 4x^2 - 4x - 3 \\) を因数分解しなさい。", opts: ["\\( (2x+1)(2x-3) \\)", "\\( (2x-1)(2x+3) \\)", "\\( (4x+1)(x-3) \\)", "\\( (4x-3)(x+1) \\)"], correct: 0, hint: "4x^2 を 2xと2x に分けるとうまくいきます。", exp: "\\( (2x+1)(2x-3) \\) です。\\( -6+2=-4 \\) となります。" },
+            { q: "\\( 6x^2 + 7x + 2 \\) を因数分解しなさい。", opts: ["\\( (2x+1)(3x+2) \\)", "\\( (6x+1)(x+2) \\)", "\\( (2x+2)(3x+1) \\)", "\\( (2x-1)(3x-2) \\)"], correct: 0, hint: "6を2x3に、2を1x2に。", exp: "\\( (2x+1)(3x+2) \\) です。\\( 4+3=7 \\) となります。" },
+            { q: "\\( 2x^2 - 7x + 3 \\) を因数分解しなさい。", opts: ["\\( (2x-1)(x-3) \\)", "\\( (2x-3)(x-1) \\)", "\\( (x-2)(x-3) \\)", "\\( (2x+1)(x+3) \\)"], correct: 0, hint: "かけて3, 足して-7。", exp: "\\( (2x-1)(x-3) \\) です。" },
+            { q: "\\( 3x^2 + 10x + 3 \\) を因数分解しなさい。", opts: ["\\( (3x+1)(x+3) \\)", "\\( (3x+3)(x+1) \\)", "\\( (x+3)(x+1) \\)", "\\( (3x-1)(x-3) \\)"], correct: 0, hint: "たすきがけで 9+1=10 を作ります。", exp: "\\( (3x+1)(x+3) \\) です。" },
+{ q: "\\( 2x^2 + 5x + 2 \\) を因数分解しなさい。", opts: ["\\( (2x+1)(x+2) \\)", "\\( (2x+2)(x+1) \\)", "\\( (2x-1)(x-2) \\)", "\\( (x+1)(2x+2) \\)"], correct: 0, hint: "かけて2、かけて2、たして5。", exp: "\\( (2x+1)(x+2) \\) です。" },
+            { q: "\\( 2x^2 + 5x + 3 \\) を因数分解しなさい。", opts: ["\\( (2x+3)(x+1) \\)", "\\( (2x+1)(x+3) \\)", "\\( (2x-3)(x-1) \\)", "\\( (x+1)(2x+3) \\)"], correct: 0, hint: "かけて2、かけて3、たして5。", exp: "\\( (2x+3)(x+1) \\) です。" },
+            { q: "\\( 3x^2 + 5x + 2 \\) を因数分解しなさい。", opts: ["\\( (3x+2)(x+1) \\)", "\\( (3x+1)(x+2) \\)", "\\( (3x-2)(x-1) \\)", "\\( (x+1)(3x+2) \\)"], correct: 0, hint: "かけて3、かけて2、たして5。", exp: "\\( (3x+2)(x+1) \\) です。" },
+            { q: "\\( 2x^2 - 3x + 1 \\) を因数分解しなさい。", opts: ["\\( (2x-1)(x-1) \\)", "\\( (2x+1)(x+1) \\)", "\\( (2x-1)(x+1) \\)", "\\( (2x+1)(x-1) \\)"], correct: 0, hint: "かけて1、たして-3。", exp: "\\( (2x-1)(x-1) \\) です。" },
+            { q: "\\( 3x^2 - 4x + 1 \\) を因数分解しなさい。", opts: ["\\( (3x-1)(x-1) \\)", "\\( (3x+1)(x+1) \\)", "\\( (3x-1)(x+1) \\)", "\\( (3x+1)(x-1) \\)"], correct: 0, hint: "かけて1、たして-4。", exp: "\\( (3x-1)(x-1) \\) です。" },
+            { q: "\\( 2x^2 + x - 1 \\) を因数分解しなさい。", opts: ["\\( (2x-1)(x+1) \\)", "\\( (2x+1)(x-1) \\)", "\\( (2x+1)(x+1) \\)", "\\( (2x-1)(x-1) \\)"], correct: 0, hint: "かけて-1、たして+1。", exp: "\\( (2x-1)(x+1) \\) です。" },
+            { q: "\\( 3x^2 - 2x - 1 \\) を因数分解しなさい。", opts: ["\\( (3x+1)(x-1) \\)", "\\( (3x-1)(x+1) \\)", "\\( (3x+1)(x+1) \\)", "\\( (3x-1)(x-1) \\)"], correct: 0, hint: "かけて-1、たして-2。", exp: "\\( (3x+1)(x-1) \\) です。" },
+            { q: "\\( 5x^2 + 7x + 2 \\) を因数分解しなさい。", opts: ["\\( (5x+2)(x+1) \\)", "\\( (5x+1)(x+2) \\)", "\\( (5x-2)(x-1) \\)", "\\( (x+1)(5x+2) \\)"], correct: 0, hint: "かけて5、かけて2、たして7。", exp: "\\( (5x+2)(x+1) \\) です。" },
+            { q: "\\( 2x^2 - 7x + 6 \\) を因数分解しなさい。", opts: ["\\( (2x-3)(x-2) \\)", "\\( (2x-2)(x-3) \\)", "\\( (2x+3)(x+2) \\)", "\\( (2x-6)(x-1) \\)"], correct: 0, hint: "かけて6、たして-7。", exp: "\\( (2x-3)(x-2) \\) です。" },
+            { q: "\\( 3x^2 + 8x + 4 \\) を因数分解しなさい。", opts: ["\\( (3x+2)(x+2) \\)", "\\( (3x+4)(x+1) \\)", "\\( (3x+1)(x+4) \\)", "\\( (3x-2)(x-2) \\)"], correct: 0, hint: "かけて4、たして8。", exp: "\\( (3x+2)(x+2) \\) です。" }
+        ]
+    };
+
+    let quizState = {
+        questions: [],
+        currentIdx: 0,
+        score: 0,
+        answered: false
+    };
+
+    function startQuiz() {
+        const section = document.getElementById('section-select').value;
+        const count = parseInt(document.getElementById('q-count').value);
+        
+        let pool = [];
+        if (section === 'all') {
+            Object.values(database).forEach(sec => pool.push(...sec));
+        } else {
+            pool = database[section];
+        }
+
+        pool.sort(() => Math.random() - 0.5);
+        quizState.questions = pool.slice(0, count);
+        quizState.currentIdx = 0;
+        quizState.score = 0;
+
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('quiz-screen').classList.remove('hidden');
+        document.getElementById('result-screen').classList.add('hidden');
+        
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        quizState.answered = false;
+        const q = quizState.questions[quizState.currentIdx];
+
+        document.getElementById('feedback-area').classList.add('hidden');
+        document.getElementById('hint-content').classList.add('hidden');
+        
+        const arrow = document.getElementById('hint-arrow');
+        arrow.classList.remove('open');
+        arrow.classList.add('closed');
+
+        document.getElementById('q-counter').innerText = `Q ${quizState.currentIdx + 1}/${quizState.questions.length}`;
+        document.getElementById('score-counter').innerText = `正解数: ${quizState.score}`;
+        const pct = (quizState.currentIdx / quizState.questions.length) * 100;
+        document.getElementById('progress-bar').style.width = `${pct}%`;
+
+        document.getElementById('question-text').innerHTML = q.q;
+
+        const list = document.getElementById('options-list');
+        list.innerHTML = '';
+        
+        // 選択肢もシャッフルして表示
+        let options = q.opts.map((opt, i) => ({ text: opt, originalIdx: i }));
+        const correctText = q.opts[q.correct];
+        options.sort(() => Math.random() - 0.5);
+
+options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    // 正解かどうかをデータ属性に保存しておく
+    btn.dataset.isCorrect = (opt.text === correctText); 
+    btn.innerHTML = `<span class="opt-num">${i + 1}</span><span class="opt-content">${opt.text}</span>`;
+    
+    // 引数に自分自身（btn）を渡す
+    btn.onclick = () => checkAnswer(btn); 
+    list.appendChild(btn);
+});
+        
+        document.getElementById('hint-content').innerText = q.hint;
+        if (window.MathJax) MathJax.typesetPromise();
+    }
+
+    function toggleHint() {
+        const content = document.getElementById('hint-content');
+        const arrow = document.getElementById('hint-arrow');
+        content.classList.toggle('hidden');
+        arrow.classList.toggle('open');
+        arrow.classList.toggle('closed');
+    }
+
+function checkAnswer(selectedBtn) {
+    if (quizState.answered) return;
+    quizState.answered = true;
+
+    const btns = document.querySelectorAll('.option-btn');
+    // 選択されたボタンが正解かどうかを判定
+    const isCorrect = (selectedBtn.dataset.isCorrect === "true");
+
+    btns.forEach((btn) => {
+        btn.disabled = true;
+        
+        // データ属性を見て、そのボタンが正解なら一律で correct クラスを付与
+        if (btn.dataset.isCorrect === "true") {
+            btn.classList.add('correct');
+        } 
+        // 不正解を選んだ場合、その選んだボタンだけに wrong クラスを付与
+        else if (btn === selectedBtn && !isCorrect) {
+            btn.classList.add('wrong');
+        } 
+        // それ以外（選ばなかった不正解の選択肢）を薄くする
+        else {
+            btn.classList.add('dimmed');
+        }
+    });
+
+        const badge = document.getElementById('result-badge');
+        if (isCorrect) {
+            quizState.score++;
+            badge.innerText = "正解！";
+            badge.className = "result-badge bg-correct";
+        } else {
+            badge.innerText = "不正解...";
+            badge.className = "result-badge bg-wrong";
+        }
+
+        document.getElementById('explanation-text').innerHTML = quizState.questions[quizState.currentIdx].exp;
+        document.getElementById('feedback-area').classList.remove('hidden');
+        
+        const pct = ((quizState.currentIdx + 1) / quizState.questions.length) * 100;
+        document.getElementById('progress-bar').style.width = `${pct}%`;
+
+        if (window.MathJax) MathJax.typesetPromise();
+    }
+
+    function nextQuestion() {
+        quizState.currentIdx++;
+        if (quizState.currentIdx >= quizState.questions.length) {
+            showResult();
+        } else {
+            loadQuestion();
+        }
+    }
+
+    function showResult() {
+        document.getElementById('quiz-screen').classList.add('hidden');
+        document.getElementById('result-screen').classList.remove('hidden');
+        const total = quizState.questions.length;
+        document.getElementById('final-score').innerText = Math.round((quizState.score / total) * 100);
+        
+        let msg = quizState.score === total ? "完璧です！因数分解マスターですね。" : 
+                  quizState.score >= total * 0.8 ? "素晴らしい！あと少しで満点です。" : "繰り返し練習して公式を覚えましょう。";
+        document.getElementById('result-msg').innerText = msg;
+    }
+
+    function quitQuiz() {
+        if (confirm("タイトルに戻りますか？")) returnToTitle();
+    }
+
+    function returnToTitle() {
+        document.getElementById('quiz-screen').classList.add('hidden');
+        document.getElementById('result-screen').classList.add('hidden');
+        document.getElementById('start-screen').classList.remove('hidden');
+    }
+</script>
+
+</body>
+</html>
