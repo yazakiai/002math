@@ -217,6 +217,7 @@
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
+/* --- 解説パネル (下からスライド) --- */
         #feedback-area {
             background: #f9f9f9;
             border-top: 1px solid var(--border-color);
@@ -224,9 +225,15 @@
             border-radius: 20px 20px 0 0;
             box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
             animation: slideUp 0.3s ease-out;
-            position: relative;
-            z-index: 10;
-            margin-top: auto;
+            
+            /* --- 修正箇所: ZStackのように画面下部に固定 --- */
+            position: absolute; 
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            box-sizing: border-box; /* パディングを含めて幅100%にする */
+            z-index: 100;           /* 他の要素より手前に表示 */
+            /* ------------------------------------------- */
         }
 
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
